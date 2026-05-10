@@ -1,9 +1,10 @@
 <?php
-$core = __DIR__;
+
+$core = __DIR__ . "/core";
 $vendo_dir = __DIR__ . "/vendo";
 
 if(!file_exists($vendo_dir)){
-    mkdir($vendo_dir, 0777, true);
+    mkdir($vendo_dir,0777,true);
 }
 
 $msg = "";
@@ -11,82 +12,128 @@ $links = [];
 
 if(isset($_POST['vendo_name'])){
 
-    // sanitize name
-    $vendo_name = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $_POST['vendo_name']));
+    $vendo_name = strtolower(
+        preg_replace('/[^a-zA-Z0-9]/','',$_POST['vendo_name'])
+    );
 
     if(!$vendo_name){
-        $msg = "❌ Invalid vendo name";
-    } else {
+
+        $msg = "❌ Invalid Name";
+
+    }else{
 
         $path = "$vendo_dir/$vendo_name";
 
         if(file_exists($path)){
-            $msg = "❌ Vendo already exists";
-        } else {
 
-            mkdir($path, 0777, true);
+            $msg = "❌ Vendo Already Exists";
 
-            // ================= COPY CORE FILES =================
+        }else{
+
+            mkdir($path,0777,true);
+
+            // =========================
+            // FILES TO COPY
+            // =========================
+
             $files = [
+
                 "index.php",
                 "pay.php",
                 "wait.php",
                 "admin.php",
                 "api.php",
                 "clear.php",
+
                 "config.json",
-                "vouchers.json",
-                "tokens.json",
                 "logs.json",
-                "qr.jpg"
+                "tokens.json",
+                "vouchers.json",
+
+                "qr.jpg",
+                "current.txt",
+                "install.sh"
+
             ];
 
             foreach($files as $f){
+
                 if(file_exists("$core/$f")){
-                    copy("$core/$f", "$path/$f");
+
+                    copy(
+                        "$core/$f",
+                        "$path/$f"
+                    );
+
                 }
+
             }
 
-            // ================= GENERATE UNIQUE API KEY =================
-            $new_key = substr(md5(uniqid().rand()), 0, 12);
+            // =========================
+            // GENERATE API KEY
+            // =========================
 
-            // ================= UPDATE CONFIG.JSON =================
+            $apikey = substr(
+                md5(time().rand()),
+                0,
+                16
+            );
+
             $config_file = "$path/config.json";
 
             $config = [];
+
             if(file_exists($config_file)){
-                $config = json_decode(file_get_contents($config_file), true);
+
+                $config = json_decode(
+                    file_get_contents($config_file),
+                    true
+                );
+
             }
 
-            if(!is_array($config)) $config = [];
+            $config['api_key'] = $apikey;
 
-            $config['api_key'] = $new_key;
-            $config['earnings'] = $config['earnings'] ?? 0;
+            file_put_contents(
+                $config_file,
+                json_encode(
+                    $config,
+                    JSON_PRETTY_PRINT
+                )
+            );
 
-            file_put_contents($config_file, json_encode($config, JSON_PRETTY_PRINT));
+            // =========================
+            // LINKS
+            // =========================
 
-            // ================= BUILD LINKS =================
-            $base = "http://".$_SERVER['HTTP_HOST']."/vendo/$vendo_name";
+            $base =
+            "http://" .
+            $_SERVER['HTTP_HOST'] .
+            "/vendo/" .
+            $vendo_name;
 
-            $index = "$base/index.php";
-            $admin = "$base/admin.php";
-            $api   = "$base/api.php?key=$new_key";
-            $wait  = "$base/wait.php";
+            $links = [
 
-            // ================= SAVE SETUP =================
-            $setup = [
-                "vendo_name"=>$vendo_name,
-                "index"=>$index,
-                "admin"=>$admin,
-                "api"=>$api,
-                "wait"=>$wait,
-                "usage"=>"Use API like this: api.php?key=$new_key&amount=10"
+                "Index" =>
+                "$base/index.php",
+
+                "Admin" =>
+                "$base/admin.php",
+
+                "API" =>
+                "$base/api.php?key=$apikey&amount=10",
+
+                "Wait" =>
+                "$base/wait.php",
+
+                "Download" =>
+                "$base/install.sh"
+
             ];
 
-            file_put_contents("$path/setup.json", json_encode($setup, JSON_PRETTY_PRINT));
+            $msg =
+            "✅ Vendo Created Successfully!";
 
-            $links = $setup;
-            $msg = "✅ Vendo Created Successfully!";
         }
     }
 }
@@ -95,90 +142,168 @@ if(isset($_POST['vendo_name'])){
 <!DOCTYPE html>
 <html>
 <head>
-<title>Create Vendo</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Multi Vendo Creator</title>
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1">
 
 <style>
-body {
-    font-family: Arial;
-    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+
+body{
+
+    font-family:Arial;
+    background:
+    linear-gradient(
+    135deg,
+    #0f2027,
+    #203a43,
+    #2c5364
+    );
+
+    margin:0;
     color:white;
     text-align:center;
-    margin:0;
 }
 
-.box {
+.title{
+
+    font-size:40px;
+    margin-top:40px;
+    font-weight:bold;
+}
+
+.box{
+
     background:white;
     color:black;
+
     margin:20px;
-    padding:20px;
+    padding:25px;
+
+    border-radius:20px;
+}
+
+input{
+
+    width:90%;
+    padding:18px;
+
     border-radius:15px;
-}
-
-input {
-    width:90%;
-    padding:12px;
-    margin:10px;
-    border-radius:10px;
     border:1px solid #ccc;
+
+    font-size:18px;
 }
 
-button {
-    padding:15px;
-    width:90%;
+button{
+
+    width:95%;
+    margin-top:15px;
+
+    padding:16px;
+
     border:none;
-    border-radius:10px;
-    background:#2196F3;
+    border-radius:15px;
+
+    background:#2196f3;
     color:white;
-    font-size:16px;
+
+    font-size:20px;
+    font-weight:bold;
 }
 
-.link {
-    background:#eee;
-    padding:10px;
-    margin:5px;
-    border-radius:8px;
+.link{
+
+    background:#f1f1f1;
+
+    margin-top:10px;
+    padding:15px;
+
+    border-radius:10px;
+
     word-break:break-all;
 }
+
+.success{
+
+    color:green;
+    font-size:30px;
+    font-weight:bold;
+}
+
+.download{
+
+    background:#00c853;
+}
+
 </style>
 </head>
 
 <body>
 
-<h2>🛠 Create Vendo</h2>
+<div class="title">
+🔥 Multi Vendo Creator
+</div>
 
 <div class="box">
-<form method="post">
-<input name="vendo_name" placeholder="Enter vendo name (e.g. juanwifi)" required>
-<button>Create</button>
+
+<form method="POST">
+
+<input
+type="text"
+name="vendo_name"
+placeholder="example: alpisowifi"
+required>
+
+<button type="submit">
+Create Vendo
+</button>
+
 </form>
 
-<h3><?= $msg ?></h3>
+<?php if($msg): ?>
+
+<div class="success">
+<?= $msg ?>
+</div>
+
+<?php endif; ?>
+
 </div>
 
 <?php if($links): ?>
+
 <div class="box">
-<h3>🔗 Your Vendo Links</h3>
 
-<p>🌐 Index</p>
-<div class="link"><?= $links['index'] ?></div>
+<h1>🔗 Your Vendo Links</h1>
 
-<p>⚙️ Admin</p>
-<div class="link"><?= $links['admin'] ?></div>
+<?php foreach($links as $name => $url): ?>
 
-<p>🔑 API</p>
-<div class="link"><?= $links['api'] ?>&amount=10</div>
+<h2><?= $name ?></h2>
 
-<p>⏳ Wait Page</p>
-<div class="link"><?= $links['wait'] ?></div>
+<div class="link">
+<?= $url ?>
+</div>
 
-<br>
+<?php if($name == "Download"): ?>
 
-<a href="vendo/<?= $links['vendo_name'] ?>/setup.json" download>
-<button>⬇ Download Setup File</button>
+<a href="<?= $url ?>">
+
+<button class="download">
+
+⬇ Download Setup File
+
+</button>
+
 </a>
 
+<?php endif; ?>
+
+<?php endforeach; ?>
+
 </div>
+
 <?php endif; ?>
 
 </body>
