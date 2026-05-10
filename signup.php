@@ -33,7 +33,7 @@ if(isset($_POST['vendo_name'])){
             mkdir($path,0777,true);
 
             // =========================
-            // FILES TO COPY
+            // COPY FILES
             // =========================
 
             $files = [
@@ -51,8 +51,7 @@ if(isset($_POST['vendo_name'])){
                 "vouchers.json",
 
                 "qr.jpg",
-                "current.txt",
-                "install.sh"
+                "current.txt"
 
             ];
 
@@ -70,7 +69,7 @@ if(isset($_POST['vendo_name'])){
             }
 
             // =========================
-            // GENERATE API KEY
+            // API KEY
             // =========================
 
             $apikey = substr(
@@ -103,7 +102,7 @@ if(isset($_POST['vendo_name'])){
             );
 
             // =========================
-            // LINKS
+            // BASE URL
             // =========================
 
             $base =
@@ -111,6 +110,35 @@ if(isset($_POST['vendo_name'])){
             $_SERVER['HTTP_HOST'] .
             "/vendo/" .
             $vendo_name;
+
+            // =========================
+            // CREATE SETUP FILE
+            // =========================
+
+            $setup = "
+
+INDEX:
+$base/index.php
+
+ADMIN:
+$base/admin.php
+
+API:
+$base/api.php?key=$apikey&amount=10
+
+WAIT:
+$base/wait.php
+
+";
+
+            file_put_contents(
+                "$path/setup.txt",
+                $setup
+            );
+
+            // =========================
+            // LINKS
+            // =========================
 
             $links = [
 
@@ -127,7 +155,7 @@ if(isset($_POST['vendo_name'])){
                 "$base/wait.php",
 
                 "Download" =>
-                "$base/install.sh"
+                "$base/setup.txt"
 
             ];
 
@@ -154,6 +182,7 @@ content="width=device-width, initial-scale=1">
 body{
 
     font-family:Arial;
+
     background:
     linear-gradient(
     135deg,
@@ -288,7 +317,7 @@ Create Vendo
 
 <?php if($name == "Download"): ?>
 
-<a href="<?= $url ?>">
+<a href="<?= $url ?>" download>
 
 <button class="download">
 
